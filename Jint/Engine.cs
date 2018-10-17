@@ -511,8 +511,9 @@ namespace Jint
 
             if (reference.IsUnresolvableReference())
             {
+                JsValue val;
                 if (Options._ReferenceResolver != null &&
-                    Options._ReferenceResolver.TryUnresolvableReference(this, reference, out JsValue val))
+                    Options._ReferenceResolver.TryUnresolvableReference(this, reference, out val))
                 {
                     return val;
                 }
