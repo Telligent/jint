@@ -14,5 +14,7 @@ Fixes bugs for: Regular expressions, Dates, JSON parse, cached literals race con
     </releaseNotes>
     <tags>javascript interpreter jint</tags>
   </metadata>
-  
+  <files>
+    <file src="bin\Release\jint.dll" target="lib\net46\jint.dll" />
+ </files> 
 </package>
