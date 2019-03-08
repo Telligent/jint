@@ -19,10 +19,13 @@ namespace Jint.Runtime.Descriptors.Specialized
             _item = item;
 
             // get all instance indexers with exactly 1 argument
-            var indexers = targetType.GetProperties();
+            var indexers = targetType.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public);
 
-            // try to find first indexer having either public getter or setter with matching argument type
-            foreach (var indexer in indexers)
+			int intValue;
+			var isInt = int.TryParse(key, out intValue);
+
+			// try to find first indexer having either public getter or setter with matching argument type
+			foreach (var indexer in indexers)
             {
                 if (indexer.GetIndexParameters().Length != 1) continue;
                 if (indexer.GetGetMethod() != null || indexer.GetSetMethod() != null)
@@ -34,8 +37,9 @@ namespace Jint.Runtime.Descriptors.Specialized
                         _indexer = indexer;
                         // get contains key method to avoid index exception being thrown in dictionaries
                         _containsKey = targetType.GetMethod("ContainsKey", new Type[] { paramType });
-                        break;
 
+						if (!isInt || paramType == typeof(int))
+							break;
                     }
                 }
             }
