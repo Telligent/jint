@@ -22,6 +22,10 @@ namespace Jint.Runtime.Environments
         /// <returns><c>true</c> if it does and <c>false</c> if it does not.</returns>
         public abstract bool HasBinding(string name);
 
+        internal abstract bool TryGetBinding(string name, bool strict, out Binding binding);
+
+        internal abstract JsValue UnwrapBindingValue(string name, bool strict, in Binding binding);
+
         /// <summary>
         /// Creates a new mutable binding in an environment record.
         /// </summary>
@@ -77,6 +81,11 @@ namespace Jint.Runtime.Environments
             return false;
         }
 
+        /// <summary>
+        /// Informs whether arguments instance was accessed and maybe thus stored,
+        /// which makes it unsuitable for pooling and reuse.
+        /// </summary>
+        internal abstract void FunctionWasCalled();
     }
 }
 

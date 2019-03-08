@@ -44,6 +44,13 @@ namespace Jint.Native
 
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsNullOrUndefined()
+        {
+            return _type < Types.Boolean;
+        }
+
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsArray()
         {
             return this is ArrayInstance;
@@ -144,36 +151,44 @@ namespace Jint.Native
             }
             return this as ArrayInstance;
         }
+
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal IIterator GetIterator(Engine engine)
+        {
+            if (!TryGetIterator(engine, out var iterator))
+            {
+                return ExceptionHelper.ThrowTypeError<IIterator>(engine, "The value is not iterable");
+            }
+
+            return iterator;
+        }
         
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal IIterator GetIterator()
+        internal bool TryGetIterator(Engine engine, out IIterator iterator)
         {
-            if (!(this is ObjectInstance oi))
+            var objectInstance = TypeConverter.ToObject(engine, this);
+
+            if (!objectInstance.TryGetValue(GlobalSymbolRegistry.Iterator._value, out var value)
+                || !(value is ICallable callable))
             {
-                ExceptionHelper.ThrowArgumentException("The value is not iterable");
-                return null;
+                iterator = null;
+                return false;
             }
 
-            // TODO
-            if (!oi.TryGetValue(GlobalSymbolRegistry.Iterator._value, out var value))
-            {
-                ExceptionHelper.ThrowArgumentException("The value is not iterable");
-                return null;
-            }
+            var obj = callable.Call(this, Arguments.Empty) as ObjectInstance
+                      ?? ExceptionHelper.ThrowTypeError<ObjectInstance>(engine, "Result of the Symbol.iterator method is not an object");
 
-            if (!(value is ICallable callable))
+            if (obj is IIterator i)
             {
-                ExceptionHelper.ThrowArgumentException("The value is not iterable");
-                return null;
+                iterator = i;
             }
-
-            var obj = (ObjectInstance) callable.Call(this, Arguments.Empty);
-            if (obj is IIterator iterator)
+            else
             {
-                return iterator;
+                iterator = new IteratorInstance.ObjectWrapper(obj);
             }
-            return new IteratorInstance.ObjectWrapper(obj);
+            return true;
         }
 
         [Pure]
@@ -207,22 +222,26 @@ namespace Jint.Native
             }
 
             // TODO not implemented
-            return new Completion(CompletionType.Normal, Native.Undefined.Instance, null);
+            return new Completion(CompletionType.Normal, Native.Undefined.Instance, null, default);
         }
 
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T TryCast<T>(Action<JsValue> fail = null) where T : class
+        public T TryCast<T>() where T : class
         {
-            if (_type == Types.Object)
+            return this as T;
+        }
+
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T TryCast<T>(Action<JsValue> fail) where T : class
+        {
+            if (this is T o)
             {
-                if (this is T o)
-                {
-                    return o;
-                }
+                return o;
             }
 
-            fail?.Invoke(this);
+            fail.Invoke(this);
 
             return null;
         }
@@ -275,7 +294,7 @@ namespace Jint.Native
             for (var i = 0; i < convertersCount; i++)
             {
                 var converter = converters[i];
-                if (converter.TryConvert(value, out var result))
+                if (converter.TryConvert(engine, value, out var result))
                 {
                     return result;
                 }
@@ -313,13 +332,24 @@ namespace Jint.Native
                 return new DelegateWrapper(engine, d);
             }
 
-            if (value.GetType().IsEnum)
+            Type t = value.GetType();
+            if (t.IsEnum)
             {
-                return JsNumber.Create((int) value);
+                Type ut = Enum.GetUnderlyingType(t);
+
+                if (ut == typeof(ulong))
+                    return JsNumber.Create(System.Convert.ToDouble(value));
+
+                if (ut == typeof(uint) || ut == typeof(long))
+                    return JsNumber.Create(System.Convert.ToInt64(value));
+
+                return JsNumber.Create(System.Convert.ToInt32(value));
             }
 
             // if no known type could be guessed, wrap it as an ObjectInstance
-            return new ObjectWrapper(engine, value);
+            var h = engine.Options._WrapObjectHandler;
+            ObjectInstance o = h != null ? h(value) : null;
+            return o ?? new ObjectWrapper(engine, value);
         }
 
         private static JsValue Convert(Engine e, object v)

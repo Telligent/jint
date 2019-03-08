@@ -5,7 +5,7 @@ using Jint.Runtime;
 
 namespace Jint.Native
 {
-    public class JsString : JsValue, IEquatable<JsString>, IArrayLike
+    public class JsString : JsValue, IEquatable<JsString>
     {
         private const int AsciiMax = 126;
         private static readonly JsString[] _charToJsValue;
@@ -13,6 +13,12 @@ namespace Jint.Native
 
         public static readonly JsString Empty = new JsString("");
         private static readonly JsString NullString = new JsString("null");
+        internal static readonly JsString UndefinedString = new JsString("undefined");
+        internal static readonly JsString ObjectString = new JsString("object");
+        internal static readonly JsString FunctionString = new JsString("function");
+        internal static readonly JsString BooleanString = new JsString("boolean");
+        internal static readonly JsString StringString = new JsString("string");
+        internal static readonly JsString NumberString = new JsString("number");
 
         internal string _value;
 
@@ -99,10 +105,10 @@ namespace Jint.Native
 
         public ArrayInstance ToArray(Engine engine)
         {
-            var array = engine.Array.ConstructFast((uint) this._value.Length);
-            for (uint i = 0; i < _value.Length; ++i)
+            var array = engine.Array.ConstructFast((uint) _value.Length);
+            for (int i = 0; i < _value.Length; ++i)
             {
-                array.SetIndexValue(i, this._value[0], updateLength: false);
+                array.SetIndexValue((uint) i, _value[i], updateLength: false);
             }
 
             return array;
@@ -135,7 +141,7 @@ namespace Jint.Native
                 return true;
             }
 
-            return _value == other._value;
+            return _value == other.ToString();
         }
 
         internal sealed class ConcatenatedString : JsString
@@ -203,7 +209,12 @@ namespace Jint.Native
             {
                 if (other is ConcatenatedString cs)
                 {
-                    return _stringBuilder.Equals(cs._stringBuilder);
+                    if (_stringBuilder != null && cs._stringBuilder != null)
+                    {
+                        return _stringBuilder.Equals(cs._stringBuilder);
+                    }
+
+                    return ToString() == cs.ToString();
                 }
 
                 if (other is JsString jsString)

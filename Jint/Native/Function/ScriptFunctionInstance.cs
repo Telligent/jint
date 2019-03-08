@@ -1,41 +1,43 @@
 ﻿using System.Collections.Generic;
 using Esprima.Ast;
-using Jint.Native.Argument;
 using Jint.Native.Object;
 using Jint.Runtime;
 using Jint.Runtime.Descriptors;
 using Jint.Runtime.Descriptors.Specialized;
 using Jint.Runtime.Environments;
+using Jint.Runtime.Interpreter;
 
 namespace Jint.Native.Function
 {
-    /// <summary>
-    ///
-    /// </summary>
     public sealed class ScriptFunctionInstance : FunctionInstance, IConstructor
     {
-        private readonly IFunction _functionDeclaration;
+        internal readonly JintFunctionDefinition _function;
 
         /// <summary>
         /// http://www.ecma-international.org/ecma-262/5.1/#sec-13.2
         /// </summary>
-        /// <param name="engine"></param>
-        /// <param name="functionDeclaration"></param>
-        /// <param name="scope"></param>
-        /// <param name="strict"></param>
         public ScriptFunctionInstance(
-            Engine engine, 
-            IFunction functionDeclaration, 
-            LexicalEnvironment scope, 
+            Engine engine,
+            IFunction functionDeclaration,
+            LexicalEnvironment scope,
             bool strict)
-            : base(engine, functionDeclaration.Id?.Name ?? "", GetParameterNames(functionDeclaration), scope, strict)
+            : this(engine, new JintFunctionDefinition(engine, functionDeclaration), scope, strict)
         {
-            _functionDeclaration = functionDeclaration;
+        }
+
+        internal ScriptFunctionInstance(
+            Engine engine,
+            JintFunctionDefinition function,
+            LexicalEnvironment scope,
+            bool strict)
+            : base(engine, function._name ?? "", function._parameterNames, scope, strict)
+        {
+            _function = function;
 
             Extensible = true;
             Prototype = _engine.Function.PrototypeObject;
 
-            _length = new PropertyDescriptor(JsNumber.Create(_formalParameters.Length), PropertyFlag.AllForbidden);
+            _length = new PropertyDescriptor(JsNumber.Create(function._length), PropertyFlag.Configurable);
 
             var proto = new ObjectInstanceWithConstructor(engine, this)
             {
@@ -44,11 +46,6 @@ namespace Jint.Native.Function
             };
 
             _prototype = new PropertyDescriptor(proto, PropertyFlag.OnlyWritable);
-
-            if (_functionDeclaration.Id != null)
-            {
-                DefineOwnProperty("name", new PropertyDescriptor(_functionDeclaration.Id.Name, PropertyFlag.None), false);
-            }
 
             if (strict)
             {
@@ -59,24 +56,8 @@ namespace Jint.Native.Function
             }
         }
 
-        private static string[] GetParameterNames(IFunction functionDeclaration)
-        {
-            var list = functionDeclaration.Params;
-            var count = list.Count;
-
-            if (count == 0)
-            {
-                return System.ArrayExt.Empty<string>();
-            }
-
-            var names = new string[count];
-            for (var i = 0; i < count; ++i)
-            {
-                names[i] = ((Identifier) list[i]).Name;
-            }
-
-            return names;
-        }
+        // for example RavenDB wants to inspect this
+        public IFunction FunctionDeclaration => _function._function;
 
         /// <summary>
         /// http://www.ecma-international.org/ecma-262/5.1/#sec-13.2.1
@@ -86,7 +67,8 @@ namespace Jint.Native.Function
         /// <returns></returns>
         public override JsValue Call(JsValue thisArg, JsValue[] arguments)
         {
-            using (new StrictModeScope(Strict, true))
+            var strict = _strict || _engine._isStrict;
+            using (new StrictModeScope(strict, true))
             {
                 // setup new execution context http://www.ecma-international.org/ecma-262/5.1/#sec-10.4.3
                 JsValue thisBinding;
@@ -115,27 +97,23 @@ namespace Jint.Native.Function
                 {
                     var argumentInstanceRented = _engine.DeclarationBindingInstantiation(
                         DeclarationBindingType.FunctionCode,
-                        _functionDeclaration.HoistingScope.FunctionDeclarations,
-                        _functionDeclaration.HoistingScope.VariableDeclarations,
-                        this,
+                        _function._hoistingScope,
+                        functionInstance: this,
                         arguments);
 
-                    var result = _engine.ExecuteStatement(_functionDeclaration.Body);
-                    
+                    var result = _function._body.Execute();
+
                     var value = result.GetValueOrDefault();
-                    
-                    // we can safely release arguments if they don't escape the scope
-                    if (argumentInstanceRented
-                        && _engine.ExecutionContext.LexicalEnvironment?._record is DeclarativeEnvironmentRecord der
-                        && !(result.Value is ArgumentsInstance))
+
+                    if (argumentInstanceRented)
                     {
-                        der.ReleaseArguments();
+                        _engine.ExecutionContext.LexicalEnvironment?._record?.FunctionWasCalled();
+                        _engine.ExecutionContext.VariableEnvironment?._record?.FunctionWasCalled();
                     }
 
                     if (result.Type == CompletionType.Throw)
                     {
-                        var ex = new JavaScriptException(value).SetCallstack(_engine, result.Location);
-                        throw ex;
+                        ExceptionHelper.ThrowJavaScriptException(_engine, value, result);
                     }
 
                     if (result.Type == CompletionType.Return)
@@ -160,6 +138,7 @@ namespace Jint.Native.Function
         public ObjectInstance Construct(JsValue[] arguments)
         {
             var proto = Get("prototype").TryCast<ObjectInstance>();
+
             var obj = new ObjectInstance(_engine)
             {
                 Extensible = true,

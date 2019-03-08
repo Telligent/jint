@@ -84,8 +84,10 @@ namespace Jint.Native.Function
                 Engine,
                 function,
                 LexicalEnvironment.NewDeclarativeEnvironment(Engine, Engine.ExecutionContext.LexicalEnvironment),
-                function.Strict
-                ) { Extensible = true };
+                function.Strict)
+            {
+                Extensible = true
+            };
 
             return functionObject;
 
@@ -102,8 +104,10 @@ namespace Jint.Native.Function
                 Engine,
                 functionDeclaration,
                 LexicalEnvironment.NewDeclarativeEnvironment(Engine, Engine.ExecutionContext.LexicalEnvironment),
-                functionDeclaration.Strict
-                ) { Extensible = true };
+                functionDeclaration.Strict)
+            {
+                Extensible = true
+            };
 
             return functionObject;
         }
@@ -136,12 +140,12 @@ namespace Jint.Native.Function
             var thisArg = arguments[0];
             var argArray = arguments[1];
 
-            if (func == null)
+            if (func is null)
             {
-                ExceptionHelper.ThrowTypeError(Engine);
+                return ExceptionHelper.ThrowTypeError<object>(Engine);
             }
 
-            if (argArray.IsNull() || argArray.IsUndefined())
+            if (argArray.IsNullOrUndefined())
             {
                 return func.Call(thisArg, Arguments.Empty);
             }
