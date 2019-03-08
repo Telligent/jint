@@ -12,7 +12,7 @@ namespace Jint.Parser.Ast
 
         public string GetKey()
         {
-            return Value.ToString();
+            return (Value ?? Raw).ToString();
         }
 
     }

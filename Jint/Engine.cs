@@ -287,7 +287,7 @@ namespace Jint
         /// </summary>
         public void ResetCallStack()
         {
-            CallStack.Clear();
+			CallStack.Clear();
         }
 
         public Engine Execute(string source)
@@ -302,26 +302,47 @@ namespace Jint
             return Execute(parser.Parse(source, parserOptions));
         }
 
-        public Engine Execute(Program program)
+		public Engine Execute(Program program)
+		{
+			ResetStatementsCount();
+			ResetTimeoutTicks();
+			ResetLastStatement();
+			ResetCallStack();
+
+			return Execute(program, null);
+		}
+
+
+		public Engine Execute(Program program, JintCallStack callStack)
         {
-            ResetStatementsCount();
-            ResetTimeoutTicks();
-            ResetLastStatement();
-            ResetCallStack();
+			JintCallStack oldCallStack = null;
+			if (callStack != null)
+			{
+				oldCallStack = CallStack;
+				CallStack = callStack;
+			}
 
-            using (new StrictModeScope(Options._IsStrict || program.Strict))
-            {
-                DeclarationBindingInstantiation(DeclarationBindingType.GlobalCode, program.FunctionDeclarations, program.VariableDeclarations, null, null);
+			try
+			{
+				using (new StrictModeScope(Options._IsStrict || program.Strict))
+				{
+					DeclarationBindingInstantiation(DeclarationBindingType.GlobalCode, program.FunctionDeclarations, program.VariableDeclarations, null, null);
 
-                var result = _statements.ExecuteProgram(program);
-                if (result.Type == Completion.Throw)
-                {
-                    throw new JavaScriptException(result.GetValueOrDefault())
-                        .SetCallstack(this, result.Location);
-                }
+					var result = _statements.ExecuteProgram(program);
+					if (result.Type == Completion.Throw)
+					{
+						throw new JavaScriptException(result.GetValueOrDefault())
+							.SetCallstack(this, result.Location);
+					}
 
-                _completionValue = result.GetValueOrDefault();
-            }
+					_completionValue = result.GetValueOrDefault();
+				}
+			}
+			finally
+			{
+				if (oldCallStack != null)
+					CallStack = oldCallStack;
+			}
 
             return this;
         }

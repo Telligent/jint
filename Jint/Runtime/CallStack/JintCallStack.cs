@@ -41,6 +41,14 @@ namespace Jint.Runtime.CallStack
             return item;
         }
 
+		public int Count
+		{
+			get
+			{
+				return _stack.Count;
+			}
+		}
+
         public void Clear()
         {
             _stack.Clear();
