@@ -367,7 +367,7 @@ namespace Jint.Native
 
             if (value.GetType().IsEnum())
             {
-                return new JsValue((Int32)value);
+                return new JsValue(value.ToString());
             }
 
             // if no known type could be guessed, wrap it as an ObjectInstance

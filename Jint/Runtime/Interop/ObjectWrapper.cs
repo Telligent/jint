@@ -59,7 +59,7 @@ namespace Jint.Runtime.Interop
             var type = Target.GetType();
 
             // look for a property
-            var property = type.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public)
+            var property = type.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public)
                 .Where(p => EqualsIgnoreCasing(p.Name, propertyName))
                 .FirstOrDefault();
             if (property != null)
@@ -70,7 +70,7 @@ namespace Jint.Runtime.Interop
             }
 
             // look for a field
-            var field = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public)
+            var field = type.GetFields(BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public)
                 .Where(f => EqualsIgnoreCasing(f.Name, propertyName))
                 .FirstOrDefault();
             if (field != null)
@@ -81,7 +81,7 @@ namespace Jint.Runtime.Interop
             }
 
             // if no properties were found then look for a method 
-            var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public)
+            var methods = type.GetMethods(BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public)
                 .Where(m => EqualsIgnoreCasing(m.Name, propertyName))
                 .ToArray();
 
