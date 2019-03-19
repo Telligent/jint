@@ -157,39 +157,39 @@ namespace Jint.Runtime.Interop
             ownDesc.Value = value;
         }
 
-        public override PropertyDescriptor GetOwnProperty(string propertyName)
-        {
-            // todo: cache members locally
+		public override PropertyDescriptor GetOwnProperty(string propertyName)
+		{
+			// todo: cache members locally
 
-            if (Type.IsEnum())
-            {
-                Array enumValues = Enum.GetValues(Type);
-                Array enumNames = Enum.GetNames(Type);
+			if (Type.IsEnum())
+			{
+				Array enumValues = Enum.GetValues(Type);
+				Array enumNames = Enum.GetNames(Type);
 
-                for (int i = 0; i < enumValues.Length; i++)
-                {
-                    if (enumNames.GetValue(i) as string == propertyName)
-                    {
-                        return new PropertyDescriptor((int)enumValues.GetValue(i), false, false, false);
-                    }
-                }
-                return PropertyDescriptor.Undefined;
-            }
+				for (int i = 0; i < enumValues.Length; i++)
+				{
+					if (enumNames.GetValue(i) as string == propertyName)
+					{
+						return new PropertyDescriptor((int)enumValues.GetValue(i), false, false, false);
+					}
+				}
+				return PropertyDescriptor.Undefined;
+			}
 
-            var propertyInfo = Type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static);
+			var propertyInfo = Type.GetProperty(propertyName, BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
             if (propertyInfo != null)
             {
                 return new PropertyInfoDescriptor(Engine, propertyInfo, Type);
             }
 
-            var fieldInfo = Type.GetField(propertyName, BindingFlags.Public | BindingFlags.Static);
+            var fieldInfo = Type.GetField(propertyName, BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
             if (fieldInfo != null)
             {
                 return new FieldInfoDescriptor(Engine, fieldInfo, Type);
             }
 
             var methodInfo = Type
-                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .GetMethods(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static)
                 .Where(mi => mi.Name == propertyName)
                 .ToArray();
 
