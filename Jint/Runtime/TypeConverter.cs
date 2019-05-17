@@ -371,7 +371,16 @@ namespace Jint.Runtime
         public static IEnumerable<MethodBase> FindBestMatch(Engine engine, MethodBase[] methods, JsValue[] arguments)
         {
             methods = methods
-                .Where(m => m.GetParameters().Count() == arguments.Length)
+                .Where((m) => {
+					var parameters = m.GetParameters();
+					if (parameters.Count() == arguments.Length)
+						return true;
+
+					if (parameters.Any(p => p.HasAttribute<ParamArrayAttribute>()) && parameters.Count() < arguments.Length)
+						return true;
+
+					return false;
+				})
                 .ToArray();
 
             if (methods.Length == 1 && !methods[0].GetParameters().Any())
@@ -385,25 +394,28 @@ namespace Jint.Runtime
             {
                 var perfectMatch = true;
                 var parameters = method.GetParameters();
-                for (var i = 0; i < arguments.Length; i++)
-                {
-                    var arg = objectArguments[i];
-                    var paramType = parameters[i].ParameterType;
-                    
-                    if (arg == null)
-                    {
-                        if (!TypeIsNullable(paramType))
-                        {
-                            perfectMatch = false;
-                            break;
-                        }
-                    }
-                    else if (arg.GetType() != paramType)
-                    {
-                        perfectMatch = false;
-                        break;
-                    }
-                }
+				if (parameters.Length == arguments.Length)
+				{
+					for (var i = 0; i < arguments.Length; i++)
+					{
+						var arg = objectArguments[i];
+						var paramType = parameters[i].ParameterType;
+
+						if (arg == null)
+						{
+							if (!TypeIsNullable(paramType))
+							{
+								perfectMatch = false;
+								break;
+							}
+						}
+						else if (arg.GetType() != paramType)
+						{
+							perfectMatch = false;
+							break;
+						}
+					}
+				}
 
                 if (perfectMatch)
                 {

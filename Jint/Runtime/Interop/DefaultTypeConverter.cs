@@ -196,9 +196,12 @@ namespace Jint.Runtime.Interop
         public virtual bool TryConvert(object value, Type type, IFormatProvider formatProvider, out object converted)
         {
             bool canConvert;
-            var key = value == null ? String.Format("Null->{0}", type) : String.Format("{0}->{1}", value.GetType(), type);
+			var valueType = value == null ? null : value.GetType();
+            var key = value == null ? String.Format("Null->{0}", type) : String.Format("{0}->{1}", valueType, type);
 
-            if (!_knownConversions.TryGetValue(key, out canConvert))
+			if (valueType != null && (valueType == typeof(object) || valueType.GetElementType() == typeof(object)))
+				canConvert = true;
+			else if (!_knownConversions.TryGetValue(key, out canConvert))
             {
                 lock (_lockObject)
                 {

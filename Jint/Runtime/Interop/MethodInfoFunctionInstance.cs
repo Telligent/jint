@@ -28,28 +28,28 @@ namespace Jint.Runtime.Interop
 
         public JsValue Invoke(MethodInfo[] methodInfos, JsValue thisObject, JsValue[] jsArguments)
         {
-            var arguments = ProcessParamsArrays(jsArguments, methodInfos);
-            var methods = TypeConverter.FindBestMatch(Engine, methodInfos, arguments).ToList();
+            var methods = TypeConverter.FindBestMatch(Engine, methodInfos, jsArguments).ToList();
             var converter = Engine.ClrTypeConverter;
 
             foreach (var method in methods)
             {
-                var parameters = new object[arguments.Length];
+				var methodArguments = ProcessParamsArrays(jsArguments, method);
+				var parameters = new object[methodArguments.Length];
                 var argumentsMatch = true;
 
-                for (var i = 0; i < arguments.Length; i++)
+                for (var i = 0; i < methodArguments.Length; i++)
                 {
                     var parameterType = method.GetParameters()[i].ParameterType;
 
                     if (parameterType == typeof(JsValue))
                     {
-                        parameters[i] = arguments[i];
+                        parameters[i] = methodArguments[i];
                     }
-                    else if (parameterType == typeof(JsValue[]) && arguments[i].IsArray())
+                    else if (parameterType == typeof(JsValue[]) && methodArguments[i].IsArray())
                     {
                         // Handle specific case of F(params JsValue[])
 
-                        var arrayInstance = arguments[i].AsArray();
+                        var arrayInstance = methodArguments[i].AsArray();
                         var len = TypeConverter.ToInt32(arrayInstance.Get("length"));
                         var result = new JsValue[len];
                         for (var k = 0; k < len; k++)
@@ -64,7 +64,7 @@ namespace Jint.Runtime.Interop
                     }
                     else
                     {
-                        if (!converter.TryConvert(arguments[i].ToObject(), parameterType, CultureInfo.InvariantCulture, out parameters[i]))
+                        if (!converter.TryConvert(methodArguments[i].ToObject(), parameterType, CultureInfo.InvariantCulture, out parameters[i]))
                         {
                             argumentsMatch = false;
                             break;
@@ -108,32 +108,27 @@ namespace Jint.Runtime.Interop
         /// <summary>
         /// Reduces a flat list of parameters to a params array
         /// </summary>
-        private JsValue[] ProcessParamsArrays(JsValue[] jsArguments, IEnumerable<MethodInfo> methodInfos)
+        private JsValue[] ProcessParamsArrays(JsValue[] jsArguments, MethodBase methodInfo)
         {
-            foreach (var methodInfo in methodInfos)
-            {
-                var parameters = methodInfo.GetParameters();
-                if (!parameters.Any(p => p.HasAttribute<ParamArrayAttribute>()))
-                    continue;
+            var parameters = methodInfo.GetParameters();
+			if (!parameters.Any(p => p.HasAttribute<ParamArrayAttribute>()))
+				return jsArguments;
 
-                var nonParamsArgumentsCount = parameters.Length - 1;
-                if (jsArguments.Length < nonParamsArgumentsCount)
-                    continue;
+            var nonParamsArgumentsCount = parameters.Length - 1;
+            if (jsArguments.Length < nonParamsArgumentsCount)
+				return jsArguments;
 
-                var newArgumentsCollection = jsArguments.Take(nonParamsArgumentsCount).ToList();
-                var argsToTransform = jsArguments.Skip(nonParamsArgumentsCount).ToList();
+			var newArgumentsCollection = jsArguments.Take(nonParamsArgumentsCount).ToList();
+            var argsToTransform = jsArguments.Skip(nonParamsArgumentsCount).ToList();
 
-                if (argsToTransform.Count == 1 && argsToTransform.FirstOrDefault().IsArray())
-                    continue;
+            if (argsToTransform.Count == 1 && argsToTransform.FirstOrDefault().IsArray())
+				return jsArguments;
 
-                var jsArray = Engine.Array.Construct(Arguments.Empty);
-                Engine.Array.PrototypeObject.Push(jsArray, argsToTransform.ToArray());
+			var jsArray = Engine.Array.Construct(Arguments.Empty);
+            Engine.Array.PrototypeObject.Push(jsArray, argsToTransform.ToArray());
 
-                newArgumentsCollection.Add(new JsValue(jsArray));
-                return newArgumentsCollection.ToArray();
-            }
-
-            return jsArguments;
+            newArgumentsCollection.Add(new JsValue(jsArray));
+            return newArgumentsCollection.ToArray();
         }
 
     }
