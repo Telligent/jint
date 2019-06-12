@@ -27,10 +27,20 @@ namespace Jint.Runtime
             _errorObject = errorConstructor.Construct(new JsValue[] { message });
         }
 
-        public JavaScriptException(JsValue error)
+		public JavaScriptException(ErrorConstructor errorConstructor, string message, Exception inner)
+		   : base(message)
+		{
+			if (inner != null)
+				_errorObject = errorConstructor.Construct(new JsValue[] { message, inner.ToString() });
+			else
+				_errorObject = errorConstructor.Construct(new JsValue[] { message });
+		}
+
+		public JavaScriptException(JsValue error)
             : base(GetErrorMessage(error))
         {
             _errorObject = error;
+			Inner = GetInner(error);
         }
 
         public JavaScriptException SetCallstack(Engine engine, Location location = null)
@@ -82,6 +92,19 @@ namespace Jint.Runtime
             return error.ToString();
         }
 
+		private static string GetInner(JsValue error)
+		{
+			if (error.IsObject())
+			{
+				var oi = error.AsObject();
+				var inner = oi.Get("inner");
+				if (inner != JsValue.Undefined)
+					return inner.AsString();
+			}
+
+			return null;
+		}
+
         public JsValue Error { get { return _errorObject; } }
 
         public override string ToString()
@@ -114,6 +137,11 @@ namespace Jint.Runtime
                 }
             }
         }
+
+		public string Inner
+		{
+			get; set;
+		}
 
         public Jint.Parser.Location Location { get; set; }
 
