@@ -51,6 +51,11 @@ namespace Jint.Native.Error
                 instance.Put("message", TypeConverter.ToString(arguments.At(0)), false);
             }
 
+			if (arguments.At(1) != Undefined.Instance)
+			{
+				instance.Put("inner", TypeConverter.ToString(arguments.At(1)), false);
+			}
+
             return instance;
         }
 

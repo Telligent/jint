@@ -95,7 +95,7 @@ namespace Jint.Runtime.Interop
 
                     if (handler != null && handler(meaningfulException))
                     {
-                        throw new JavaScriptException(Engine.Error, meaningfulException.Message);
+                        throw new JavaScriptException(Engine.Error, meaningfulException.Message, meaningfulException);
                     }
 
                     throw meaningfulException;
