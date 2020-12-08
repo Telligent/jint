@@ -331,8 +331,8 @@ namespace Jint
 					var result = _statements.ExecuteProgram(program);
 					if (result.Type == Completion.Throw)
 					{
-						throw new JavaScriptException(result.GetValueOrDefault())
-							.SetCallstack(this, result.Location);
+						throw result.Exception ?? new JavaScriptException(result.GetValueOrDefault())
+								.SetCallstack(this, result.Location);
 					}
 
 					_completionValue = result.GetValueOrDefault();

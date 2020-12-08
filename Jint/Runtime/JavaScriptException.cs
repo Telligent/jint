@@ -28,7 +28,7 @@ namespace Jint.Runtime
         }
 
 		public JavaScriptException(ErrorConstructor errorConstructor, string message, Exception inner)
-		   : base(message)
+		   : base(message, inner)
 		{
 			if (inner != null)
 				_errorObject = errorConstructor.Construct(new JsValue[] { message, inner.ToString() });

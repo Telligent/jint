@@ -338,6 +338,7 @@ namespace Jint.Runtime
             {
                 c = new Completion(Completion.Throw, e.Error, null);
                 c.Location = withStatement.Location;
+								c.Exception = e;
             }
             finally
             {
@@ -438,6 +439,7 @@ namespace Jint.Runtime
             {
                 c = new Completion(Completion.Throw, v.Error, null);
                 c.Location = v.Location ?? s.Location;
+								c.Exception = v;
                 return c;
             }
 
@@ -454,6 +456,7 @@ namespace Jint.Runtime
             var exprRef = _engine.EvaluateExpression(throwStatement.Argument);
             Completion c = new Completion(Completion.Throw, _engine.GetValue(exprRef), null);
             c.Location = throwStatement.Location;
+						c.Location.Source = "throw";
             return c;
         }
 
