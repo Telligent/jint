@@ -428,7 +428,8 @@ namespace Jint.Runtime
                     {
                         return new Completion(c.Type, c.Value != null ? c.Value : sl.Value, c.Identifier)
                         {
-                            Location = c.Location
+                            Location = c.Location,
+														Exception = c.Exception
                         };
                     }
 
