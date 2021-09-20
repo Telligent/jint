@@ -385,7 +385,7 @@ namespace Jint.Native
 			if (type == null)
 				return false;
 
-			return type.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>));
+			return type.GetInterfaces().Any(t => t == typeof(System.Collections.IList) || (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>)));
 		}
 
 		/// <summary>
