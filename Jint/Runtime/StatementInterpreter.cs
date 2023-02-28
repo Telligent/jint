@@ -438,6 +438,9 @@ namespace Jint.Runtime
             }
             catch (JavaScriptException v)
             {
+              if (string.IsNullOrEmpty(v.CallStack))
+                v.SetCallstack(_engine, v.Location ?? s.Location);
+
                 c = new Completion(Completion.Throw, v.Error, null);
                 c.Location = v.Location ?? s.Location;
 								c.Exception = v;
