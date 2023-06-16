@@ -83,6 +83,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Jint.nuspec.old" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="DeclarationBindingType.cs" />
     <Compile Include="Engine.cs" />
     <Compile Include="EvalCodeScope.cs" />
@@ -246,7 +249,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Directory.Build.props" />
-    <None Include="Jint.nuspec" />
     <None Include="Jint.snk" />
   </ItemGroup>
 </Project>
