@@ -94,7 +94,7 @@ namespace Jint.Runtime.Interop
             }
             try
             {
-                return JsValue.FromObject(Engine, _d.DynamicInvoke(parameters));
+                return JsValue.FromObject(Engine, Invoker.GetFunc(_d.Method)(_d.Target, parameters));
             }
             catch (TargetInvocationException exception)
             {
