@@ -8,9 +8,32 @@ namespace Jint.Runtime.Interop.Metadata
 {
  internal class DynamicTypeData : TypeData
  {
+	Type _type;
+
 	internal DynamicTypeData(Type type) : base(type)
 	{
+	 _type = type;
+	}
 
+	public override List<MethodData> FindMethod(string name)
+	{
+	 var methods = base.FindMethod(name);
+	 if (methods != null)
+		return methods;
+
+	 return [new MethodData(new DynamicMethodInfo(_type, name), true)];
+	}
+
+	public override PropertyData FindProperty(string name)
+	{
+	 var propertyInfo = base.FindProperty(name);
+	 if (propertyInfo != null)
+		return propertyInfo;
+
+	 if (propertyInfo == null)
+		return new PropertyData(new DynamicPropertyInfo(_type, name), true);
+	 else
+		return propertyInfo;
 	}
  }
 

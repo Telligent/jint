@@ -49,7 +49,7 @@ namespace Jint.Runtime.Interop.Metadata
 	 get { return _type; }
 	}
 
-	public List<PropertyData> IndexProperties
+	public virtual List<PropertyData> IndexProperties
 	{
 	 get
 	 {
@@ -65,7 +65,7 @@ namespace Jint.Runtime.Interop.Metadata
 	 }
 	}
 
-	public List<MethodData> FindMethod(string name)
+	public virtual List<MethodData> FindMethod(string name)
 	{
 	 if (_methodCache.TryGetValue(name, out List<MethodData> methods))
 		return methods;
@@ -73,7 +73,7 @@ namespace Jint.Runtime.Interop.Metadata
 	 return null;
 	}
 
-	public PropertyData FindProperty(string name)
+	public virtual PropertyData FindProperty(string name)
 	{
 	 if (_propertyCache.TryGetValue(name, out PropertyData cacheEntry))
 		return cacheEntry;
@@ -99,7 +99,7 @@ namespace Jint.Runtime.Interop.Metadata
 			methods = new List<MethodData>();
 			_methodCache[method.Name] = methods;
 		 }
-		 methods.Add(new MethodData(method, parametersAreExactType: true));
+		 methods.Add(new MethodData(method));
 		}
 
 	 foreach (MethodInfo method in _type.GetMethods(BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public))
@@ -109,7 +109,7 @@ namespace Jint.Runtime.Interop.Metadata
 		 methods = new List<MethodData>();
 		 _methodCache[method.Name] = methods;
 		}
-		methods.Add(new MethodData(method, parametersAreExactType: true));
+		methods.Add(new MethodData(method));
 	 }
 	}
 
