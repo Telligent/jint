@@ -7,14 +7,15 @@ using System.Reflection;
 using Jint.Native;
 using Jint.Native.Array;
 using Jint.Native.Function;
+using Jint.Runtime.Interop.Metadata;
 
 namespace Jint.Runtime.Interop
 {
- public sealed class MethodInfoFunctionInstance : FunctionInstance
+    public sealed class MethodInfoFunctionInstance : FunctionInstance
  {
-	private readonly MethodInfo[] _methods;
+	private readonly List<MethodData> _methods;
 
-	public MethodInfoFunctionInstance(Engine engine, MethodInfo[] methods)
+	public MethodInfoFunctionInstance(Engine engine, List<MethodData> methods)
 			: base(engine, null, null, false)
 	{
 	 _methods = methods;
@@ -26,7 +27,7 @@ namespace Jint.Runtime.Interop
 	 return Invoke(_methods, thisObject, arguments);
 	}
 
-	public JsValue Invoke(MethodInfo[] methodInfos, JsValue thisObject, JsValue[] jsArguments)
+	public JsValue Invoke(List<MethodData> methodInfos, JsValue thisObject, JsValue[] jsArguments)
 	{
 	 var methods = TypeConverter.FindBestMatch(Engine, methodInfos, jsArguments).ToList();
 	 var converter = Engine.ClrTypeConverter;
@@ -39,7 +40,7 @@ namespace Jint.Runtime.Interop
 
 		for (var i = 0; i < methodArguments.Length; i++)
 		{
-		 var parameterType = method.GetParameters()[i].ParameterType;
+		 var parameterType = method.ParameterTypes[i];
 
 		 if (parameterType == typeof(JsValue))
 		 {
@@ -86,7 +87,7 @@ namespace Jint.Runtime.Interop
 		// todo: cache method info
 		try
 		{
-		 return JsValue.FromObject(Engine, Invoker.GetFunc(method)(thisObject.ToObject(), parameters.ToArray()));
+		 return JsValue.FromObject(Engine, method.Execute(thisObject.ToObject(), parameters.ToArray()));
 		}
 		catch (TargetInvocationException exception)
 		{
@@ -108,10 +109,10 @@ namespace Jint.Runtime.Interop
 	/// <summary>
 	/// Reduces a flat list of parameters to a params array
 	/// </summary>
-	private JsValue[] ProcessParamsArrays(JsValue[] jsArguments, MethodBase methodInfo)
+	private JsValue[] ProcessParamsArrays(JsValue[] jsArguments, MethodData methodInfo)
 	{
-	 var parameters = methodInfo.GetParameters();
-	 if (!parameters.Any(p => p.HasAttribute<ParamArrayAttribute>()))
+	 var parameters = methodInfo.ParameterTypes;
+	 if (!methodInfo.ParamsParameterIndex.HasValue)
 		return jsArguments;
 
 	 var nonParamsArgumentsCount = parameters.Length - 1;

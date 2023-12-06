@@ -211,7 +211,6 @@
     <Compile Include="Runtime\Debugger\StepMode.cs" />
     <Compile Include="Runtime\Descriptors\PropertyDescriptor.cs" />
     <Compile Include="Runtime\Descriptors\Specialized\ClrAccessDescriptor.cs" />
-    <Compile Include="Runtime\Descriptors\Specialized\FieldInfoDescriptor.cs" />
     <Compile Include="Runtime\Descriptors\Specialized\IndexDescriptor.cs" />
     <Compile Include="Runtime\Descriptors\Specialized\PropertyInfoDescriptor.cs" />
     <Compile Include="Runtime\Environments\Binding.cs" />
@@ -225,11 +224,15 @@
     <Compile Include="Runtime\Interop\DefaultTypeConverter.cs" />
     <Compile Include="Runtime\Interop\DelegateWrapper.cs" />
     <Compile Include="Runtime\Interop\GetterFunctionInstance.cs" />
-    <Compile Include="Runtime\Interop\Invoker.cs" />
+    <Compile Include="Runtime\Interop\Metadata\Invoker.cs" />
     <Compile Include="Runtime\Interop\IObjectConverter.cs" />
     <Compile Include="Runtime\Interop\IObjectWrapper.cs" />
     <Compile Include="Runtime\Interop\IReferenceResolver.cs" />
     <Compile Include="Runtime\Interop\ITypeConverter.cs" />
+    <Compile Include="Runtime\Interop\Metadata\DynamicTypeData.cs" />
+    <Compile Include="Runtime\Interop\Metadata\MethodData.cs" />
+    <Compile Include="Runtime\Interop\Metadata\PropertyData.cs" />
+    <Compile Include="Runtime\Interop\Metadata\TypeData.cs" />
     <Compile Include="Runtime\Interop\MethodInfoFunctionInstance.cs" />
     <Compile Include="Runtime\Interop\NamespaceReference.cs" />
     <Compile Include="Runtime\Interop\ObjectListWrapper.cs" />

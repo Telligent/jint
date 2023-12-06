@@ -2,42 +2,43 @@
 using System.Globalization;
 using System.Reflection;
 using Jint.Native;
+using Jint.Runtime.Interop.Metadata;
 
 namespace Jint.Runtime.Descriptors.Specialized
 {
- public sealed class PropertyInfoDescriptor : PropertyDescriptor
+    public sealed class PropertyInfoDescriptor : PropertyDescriptor
  {
 	private readonly Engine _engine;
-	private readonly PropertyInfo _propertyInfo;
+	private readonly PropertyData _propertyData;
 	private readonly object _item;
-	private Func<object, object[], object> _getter;
-	private Func<object, object[], object> _setter;
 
-	public PropertyInfoDescriptor(Engine engine, PropertyInfo propertyInfo, object item)
+	public PropertyInfoDescriptor(Engine engine, PropertyData propertyData, object item)
 	{
 	 _engine = engine;
-	 _propertyInfo = propertyInfo;
+	 _propertyData = propertyData;
 	 _item = item;
 
-	 Writable = propertyInfo.CanWrite;
+	 if (propertyData.Info is PropertyInfo propertyInfo)
+		Writable = propertyInfo.CanWrite;
+	 else
+		Writable = true;
 	}
 
 	public override JsValue Value
 	{
 	 get
 	 {
-		var getter = _getter;
-		if (getter == null)
-		 _getter = getter = Jint.Runtime.Interop.Invoker.GetFunc(_propertyInfo);
-
-		return JsValue.FromObject(_engine, getter(_item, null));
+		return JsValue.FromObject(_engine, _propertyData.ExecuteGet(_item, null));
 	 }
 
 	 set
 	 {
+		if (!_propertyData.CanWrite)
+		 return;
+
 		var currentValue = value;
 		object obj;
-		if (_propertyInfo.PropertyType == typeof(JsValue))
+		if (_propertyData.PropertyType == typeof(JsValue))
 		{
 		 obj = currentValue;
 		}
@@ -45,17 +46,13 @@ namespace Jint.Runtime.Descriptors.Specialized
 		{
 		 // attempt to convert the JsValue to the target type
 		 obj = currentValue.ToObject();
-		 if (obj != null && obj.GetType() != _propertyInfo.PropertyType)
+		 if (obj != null && obj.GetType() != _propertyData.PropertyType)
 		 {
-			obj = _engine.ClrTypeConverter.Convert(obj, _propertyInfo.PropertyType, CultureInfo.InvariantCulture);
+			obj = _engine.ClrTypeConverter.Convert(obj, _propertyData.PropertyType, CultureInfo.InvariantCulture);
 		 }
 		}
 
-		var setter = _setter;
-		if (setter == null)
-		 _setter = setter = Jint.Runtime.Interop.Invoker.SetFunc(_propertyInfo);
-
-		setter(_item, [obj]);
+		_propertyData.ExecuteSet(_item, [obj]);
 	 }
 	}
  }

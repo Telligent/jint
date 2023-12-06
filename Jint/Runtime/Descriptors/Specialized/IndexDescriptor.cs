@@ -1,106 +1,86 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using Jint.Native;
+using Jint.Runtime.Interop.Metadata;
 
 namespace Jint.Runtime.Descriptors.Specialized
 {
-	public sealed class IndexDescriptor : PropertyDescriptor
+ public sealed class IndexDescriptor : PropertyDescriptor
+ {
+	private readonly Engine _engine;
+	private readonly object _key;
+	private readonly object _item;
+	private readonly PropertyData _indexer;
+	private readonly MethodData _containsKey;
+
+	public IndexDescriptor(Engine engine, TypeData typeData, string key, object item)
 	{
-		private readonly Engine _engine;
-		private readonly object _key;
-		private readonly object _item;
-		private readonly PropertyInfo _indexer;
-		private readonly MethodInfo _containsKey;
+	 _engine = engine;
+	 _item = item;
 
-		public IndexDescriptor(Engine engine, Type targetType, string key, object item)
+	 var isInt = int.TryParse(key, out _);
+
+	 // try to find first indexer having either public getter or setter with matching argument type
+	 foreach (var indexer in typeData.IndexProperties)
+	 {
+		var paramType = indexer.ParameterType;
+
+		if (_engine.ClrTypeConverter.TryConvert(key, paramType, CultureInfo.InvariantCulture, out _key))
 		{
-			_engine = engine;
-			_item = item;
+		 _indexer = indexer;
+		 // get contains key method to avoid index exception being thrown in dictionaries
+		 _containsKey = typeData.FindMethod("ContainsKey")?.FirstOrDefault(m =>
+		 {
+			var parameters = m.Info.GetParameters();
+			return (parameters.Length == 1 && parameters[0].ParameterType == paramType);
+		 });
 
-			// get all instance indexers with exactly 1 argument
-			var indexers = targetType.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public);
-
-			int intValue;
-			var isInt = int.TryParse(key, out intValue);
-
-			// try to find first indexer having either public getter or setter with matching argument type
-			foreach (var indexer in indexers)
-			{
-				if (indexer.GetIndexParameters().Length != 1) continue;
-				if (indexer.GetGetMethod() != null || indexer.GetSetMethod() != null)
-				{
-					var paramType = indexer.GetIndexParameters()[0].ParameterType;
-
-					if (_engine.ClrTypeConverter.TryConvert(key, paramType, CultureInfo.InvariantCulture, out _key))
-					{
-						_indexer = indexer;
-						// get contains key method to avoid index exception being thrown in dictionaries
-						_containsKey = targetType.GetMethod("ContainsKey", new Type[] { paramType });
-
-						if (!isInt || paramType == typeof(int))
-							break;
-					}
-				}
-			}
-
-			// throw if no indexer found
-			if (_indexer == null)
-			{
-				throw new InvalidOperationException("No matching indexer found.");
-			}
-
-			Writable = true;
+		 if (!isInt || paramType == typeof(int))
+			break;
 		}
+	 }
 
+	 // throw if no indexer found
+	 if (_indexer == null)
+	 {
+		throw new InvalidOperationException("No matching indexer found.");
+	 }
 
-		public IndexDescriptor(Engine engine, string key, object item)
-				: this(engine, item.GetType(), key, item)
-		{
-		}
-
-		public override JsValue Value
-		{
-			get
-			{
-				var getter = _indexer.GetGetMethod();
-
-				if (getter == null)
-				{
-					throw new InvalidOperationException("Indexer has no public getter.");
-				}
-
-				object[] parameters = { _key };
-
-				if (_containsKey != null)
-				{
-					if ((_containsKey.Invoke(_item, parameters) as bool?) != true)
-					{
-						return JsValue.Undefined;
-					}
-				}
-
-				try
-				{
-					return JsValue.FromObject(_engine, getter.Invoke(_item, parameters));
-				}
-				catch
-				{
-					return JsValue.Undefined;
-				}
-			}
-
-			set
-			{
-				var setter = _indexer.GetSetMethod();
-				if (setter == null)
-				{
-					throw new InvalidOperationException("Indexer has no public setter.");
-				}
-
-				object[] parameters = { _key, value != null ? value.ToObject() : null };
-				setter.Invoke(_item, parameters);
-			}
-		}
+	 Writable = true;
 	}
+
+	public override JsValue Value
+	{
+	 get
+	 {
+		object[] parameters = { _key };
+
+		if (_containsKey != null)
+		{
+		 if ((_containsKey.Execute(_item, parameters) as bool?) != true)
+		 {
+			return JsValue.Undefined;
+		 }
+		}
+
+		try
+		{
+		 return JsValue.FromObject(_engine, _indexer.ExecuteGet(_item, parameters));
+		}
+		catch
+		{
+		 return JsValue.Undefined;
+		}
+	 }
+
+	 set
+	 {
+		object[] parameters = { _key, value != null ? value.ToObject() : null };
+		_indexer.ExecuteSet(_item, parameters);
+	 }
+	}
+ }
 }

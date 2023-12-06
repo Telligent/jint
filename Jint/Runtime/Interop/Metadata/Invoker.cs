@@ -3,25 +3,24 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Jint.Runtime.Interop
+namespace Jint.Runtime.Interop.Metadata
 {
  public sealed class Invoker
  {
-	private static readonly SegmentedLruCache<MethodInfo, Func<object, object[], object>> WrapperByMethodInfo = new SegmentedLruCache<MethodInfo, Func<object, object[], object>>(10000);
+	public static Func<object, object[], object> GetFunc(ConstructorInfo constructorInfo)
+	{
+	 if (constructorInfo == null)
+		throw new ArgumentNullException(nameof(constructorInfo));
+
+	 return CreateConstructorWrapper(constructorInfo);
+	}
 
 	public static Func<object, object[], object> GetFunc(MethodInfo methodInfo)
 	{
 	 if (methodInfo == null)
 		throw new ArgumentNullException(nameof(methodInfo));
 
-	 var f = WrapperByMethodInfo.Get(methodInfo);
-	 if (f == null)
-	 {
-		f = CreateMethodWrapper(methodInfo);
-		WrapperByMethodInfo.Put(methodInfo, f);
-	 }
-
-	 return f;
+	 return CreateMethodWrapper(methodInfo);
 	}
 
 	public static Func<object, object[], object> GetFunc(PropertyInfo propertyInfo)
@@ -46,6 +45,23 @@ namespace Jint.Runtime.Interop
 		throw new ArgumentNullException("propertyInfo.SetMethod");
 
 	 return GetFunc(setter);
+	}
+
+	private static Func<object, object[], object> CreateConstructorWrapper(ConstructorInfo method)
+	{
+	 CreateParamsExpressions(method, out ParameterExpression argsExp, out Expression[] paramsExps);
+
+		var invokeExp = Expression.New(method, paramsExps);
+
+		LambdaExpression lambdaExp;
+
+		var resultExp = Expression.Convert(invokeExp, typeof(object));
+		lambdaExp = Expression.Lambda(resultExp, argsExp);
+
+		var lambda = lambdaExp.Compile();
+		var staticFunc = (Func<object[], object>)lambda;
+		return new Func<object, object[], object>((a, b) => staticFunc(b));
+
 	}
 
 	private static Func<object, object[], object> CreateMethodWrapper(MethodInfo method)
