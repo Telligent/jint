@@ -10,7 +10,7 @@
     <PackageId>Jint</PackageId>
     <PackageTags>javascript, interpreter</PackageTags>
     <PackageProjectUrl>https://github.com/sebastienros/jint</PackageProjectUrl>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/sebastienros/jint/master/LICENSE.txt</PackageLicenseUrl>
+    <!-- <PackageLicenseUrl>https://raw.githubusercontent.com/sebastienros/jint/master/LICENSE.txt</PackageLicenseUrl>-->
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/sebastienros/jint</RepositoryUrl>
   </PropertyGroup>
