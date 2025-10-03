@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,28 +13,31 @@ namespace Jint.Runtime.Interop.Metadata
 
 	internal DynamicTypeData(Type type) : base(type)
 	{
-	 _type = type;
+		_type = type;
 	}
 
-	public override List<MethodData> FindMethod(string name)
+	public override List<MethodData> FindMethod(string name, object target)
 	{
-	 var methods = base.FindMethod(name);
+	 var methods = base.FindMethod(name, target);
 	 if (methods != null)
 		return methods;
 
-	 return [new MethodData(new DynamicMethodInfo(_type, name), true)];
+	 if (((DynamicObject) target)?.GetDynamicMemberNames()?.Contains(name) == true)
+		return [new MethodData(new DynamicMethodInfo(_type, name), true)];
+		
+	 return null;
 	}
 
-	public override PropertyData FindProperty(string name)
+	public override PropertyData FindProperty(string name, object target)
 	{
-	 var propertyInfo = base.FindProperty(name);
+	 var propertyInfo = base.FindProperty(name, target);
 	 if (propertyInfo != null)
 		return propertyInfo;
 
-	 if (propertyInfo == null)
+	 if (((DynamicObject) target)?.GetDynamicMemberNames()?.Contains(name) == true)
 		return new PropertyData(new DynamicPropertyInfo(_type, name), true);
-	 else
-		return propertyInfo;
+	 
+	 return null;
 	}
  }
 

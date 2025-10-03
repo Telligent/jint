@@ -66,7 +66,7 @@ namespace Jint.Runtime.Interop
 	 if (Properties.TryGetValue(propertyName, out x))
 		return x;
 
-	 var propertyData = _typeData.FindProperty(propertyName);
+	 var propertyData = _typeData.FindProperty(propertyName, Target);
 	 if (propertyData != null)
 	 {
 		var descriptor = new PropertyInfoDescriptor(Engine, propertyData, Target);
@@ -74,7 +74,7 @@ namespace Jint.Runtime.Interop
 		return descriptor;
 	 }
 
-	 var methodDatas = _typeData.FindMethod(propertyName);
+	 var methodDatas = _typeData.FindMethod(propertyName, Target);
 	 if (methodDatas != null)
 	 {
 		var descriptor = new PropertyDescriptor(new MethodInfoFunctionInstance(Engine, methodDatas), false, true, false);

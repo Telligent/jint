@@ -174,11 +174,11 @@ namespace Jint.Runtime.Interop
 		return PropertyDescriptor.Undefined;
 	 }
 
-	 var propertyData = Type.FindProperty(propertyName);
+	 var propertyData = Type.FindProperty(propertyName, null);
 	 if (propertyData != null)
 		return new PropertyInfoDescriptor(Engine, propertyData, Target);
 
-	 var methodDatas = Type.FindMethod(propertyName);
+	 var methodDatas = Type.FindMethod(propertyName, null);
 	 if (methodDatas != null)
 		return new PropertyDescriptor(new MethodInfoFunctionInstance(Engine, methodDatas), false, true, false);
 

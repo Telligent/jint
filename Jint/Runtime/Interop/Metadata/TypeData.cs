@@ -65,7 +65,7 @@ namespace Jint.Runtime.Interop.Metadata
 	 }
 	}
 
-	public virtual List<MethodData> FindMethod(string name)
+	public virtual List<MethodData> FindMethod(string name, object target)
 	{
 	 if (_methodCache.TryGetValue(name, out List<MethodData> methods))
 		return methods;
@@ -73,7 +73,7 @@ namespace Jint.Runtime.Interop.Metadata
 	 return null;
 	}
 
-	public virtual PropertyData FindProperty(string name)
+	public virtual PropertyData FindProperty(string name, object target)
 	{
 	 if (_propertyCache.TryGetValue(name, out PropertyData cacheEntry))
 		return cacheEntry;

@@ -32,7 +32,7 @@ namespace Jint.Runtime.Descriptors.Specialized
 		{
 		 _indexer = indexer;
 		 // get contains key method to avoid index exception being thrown in dictionaries
-		 _containsKey = typeData.FindMethod("ContainsKey")?.FirstOrDefault(m =>
+		 _containsKey = typeData.FindMethod("ContainsKey", null)?.FirstOrDefault(m =>
 		 {
 			var parameters = m.Info.GetParameters();
 			return (parameters.Length == 1 && parameters[0].ParameterType == paramType);
